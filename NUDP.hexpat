@@ -1,7 +1,17 @@
-#pragma endian little
 
+import std.mem;
+
+struct vec4 {
+    float x, y, z, w;
+};
+struct bone4 {
+    u8 x, y, z, w;
+};
 struct vec3 {
     float x, y, z;
+};
+struct vec2 {
+    float x, y;
 };
 
 struct BoundingSphere {
@@ -27,11 +37,46 @@ struct DispatchHeader {
     float depthBias;
      padding[4];
 };
-
+struct unpackInfo{
+    u16 address;
+    u8 count;
+    u8 type;
+};
+struct triStripDef{
+    u16 base;
+    u8 count;
+    u8 cmd;
+};
 struct VifPacket {
     u16 packetSizeBytes;
     u16 containerFlags;
-    u8 rawData[packetSizeBytes - 4];
+    padding[8];
+    u32 vertexCount;
+    padding[8];
+    unpackInfo vertexInfo;
+    vec3 positions[vertexCount];
+    
+    unpackInfo normalInfo;
+    vec3 normals[vertexCount];
+    
+    unpackInfo uvInfo;
+    vec2 uvs[vertexCount];
+    
+    padding[4];
+    
+    unpackInfo weightInfo;
+    vec4 weights[vertexCount];
+    
+    unpackInfo boneIndexInfo;
+    bone4 boneIndexs[vertexCount];
+    padding[12];
+    triStripDef stripmagic[while(std::mem::read_unsigned($, 4) != 16777473)];
+    if($%16){
+    padding[16-($%16)];
+    }
+    u128 FinalQWord;
+    
+    
 };
 
 struct SubMesh {

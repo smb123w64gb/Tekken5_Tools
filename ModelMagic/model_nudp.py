@@ -183,7 +183,6 @@ class NUDP(object):
                 self.material.read(f)
                 f.seek(vifDMAoff)
                 curQWSize = self.packetQWC * 16
-                print(hex(curQWSize))
                 while(curQWSize>0):
                     curVif = VIFBlob()
                     curQWSize -= curVif.read(f)
