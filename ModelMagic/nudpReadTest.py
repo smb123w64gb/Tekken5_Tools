@@ -13,7 +13,5 @@ for idx,x in enumerate(nud.MeshGroups):
             testblob = VIFerator()
             testVif = FRead(z.data)
             testblob.read_vif(testVif)
-            for xx in testblob.triStrips:
-                base = int((xx.base - 1)/5)
-                print("%3i,%2i,%i V%02i B%02i T%02i"%(idx,idy,idz,len(testblob.verts),base,xx.stripCount))
+            print(testblob.get_faces())
 
