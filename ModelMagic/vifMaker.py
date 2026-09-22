@@ -20,7 +20,7 @@ class Vertex(object):
         return (self.pos == other.pos and self.norm == other.norm and 
                 self.uv == other.uv and self.weight == other.weight and 
                 self.bone_ids == other.bone_ids)
-class TriStrip(object):
+class TriStrip(object):#Prob oh so wrong
     def __init__(self,val = 1):
         self.base = val & 0xFF
         self.stripCount = (val>>16) & 0xFF
@@ -85,10 +85,7 @@ class VIFerator(object):
             self.triStrips.append(TriStrip(curStipVal))
             curStipVal = f.u32()
         '''
-        OK so there is two tristrip programs i beleve.
-        6 & 11
-        6 is good for strips 3 to 6 indexs long. Prob a unrolled loop or smth
-        11 is good 7 to 11 indexes long. Will need to test on unpacking the mesh.
+        Yeah its smth else.
         '''
         if(curStipVal == 0x1000101):
             f.u32()
