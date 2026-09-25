@@ -48,17 +48,17 @@ for indx,x in enumerate(lookups):
     if(x.size != 0xFFFFFFFF and x.size):
         fbin.seek(x.offset)
         fil = open(outDir + str("%04i_%04x" % (indx,x.id)) + ".bin",'wb')
-        dataOG = fbin.read(x.size)
-        data = tk5psp_crypt.decrypt_blob(x.id,dataOG,x.size)
-
+        dataOG = bytearray(fbin.read(x.size))
+        tk5psp_crypt.decrypt_sector_data_fast(dataOG,x.id,x.size)
+        #addchecksumstuffhere
         try:
-            decData = zlib.decompress(data)
-            if(len(decData)<len(data)):
-                fil.write(data)
+            decData = zlib.decompress(dataOG)
+            if(len(decData)<len(dataOG)):
+                fil.write(dataOG)
             else:
                 fil.write(decData)
         except zlib.error:
-            fil.write(data)
+            fil.write(dataOG)
     
 
 #print(hex(total))

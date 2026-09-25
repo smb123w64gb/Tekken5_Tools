@@ -1,37 +1,33 @@
 import struct
 
-def decrypt_blob(index_key: int, data: bytearray | bytes, file_size: int = None) -> bytearray:
-    if file_size is None:
-        file_size = len(data)
-    
-    if file_size <= 0:
-        return bytearray(data)
+def decrypt_sector_data_fast(data: bytearray, seed: int, size: int) -> None:
+    if size <= 0:
+        return
 
-    buf = bytearray(data)
-    index_key &= 0xFFFFFFFF
-
-    key = index_key
-    keystream_words = []
-    for _ in range(512):
-        keystream_words.append(key)
+    seed &= 0xFFFFFFFF
+    keystream = [0] * 512
+    key = seed
+    for i in range(512):
+        keystream[i] = key
         key = (key * 5 + 3) & 0xFFFFFFFF
+    keystream_bytes = struct.pack("<512I", *keystream)
+
+    num_blocks = size >> 11
+    rem_words = ((size & 0x7FF) + 3) >> 2
+    ks_int_2048 = int.from_bytes(keystream_bytes, "little")
+    offset = 0
+
+    for _ in range(num_blocks):
+        chunk = data[offset : offset + 2048]
+        data[offset : offset + 2048] = (
+            int.from_bytes(chunk, "little") ^ ks_int_2048
+        ).to_bytes(2048, "little")
+        offset += 2048
     
-    keystream_bytes = struct.pack('<512I', *keystream_words)
-
-
-    full_blocks = file_size // 2048
-    for b in range(full_blocks):
-        offset = b * 2048
-        for i in range(2048):
-            buf[offset + i] ^= keystream_bytes[i]
-
-    rem_bytes = file_size & 0x7FF
-    if rem_bytes > 0:
-        offset = full_blocks * 2048
-        rem_words = (rem_bytes + 3) >> 2
+    if rem_words != 0:
         rem_len = rem_words * 4
-        rem_len = min(rem_len, len(buf) - offset)
-        for i in range(rem_len):
-            buf[offset + i] ^= keystream_bytes[i]
-
-    return buf
+        chunk = data[offset : offset + rem_len]
+        rem_ks_int = int.from_bytes(keystream_bytes[:rem_len], "little")
+        data[offset : offset + rem_len] = (
+            int.from_bytes(chunk, "little") ^ rem_ks_int
+        ).to_bytes(rem_len, "little")
