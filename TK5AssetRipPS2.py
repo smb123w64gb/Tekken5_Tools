@@ -4,6 +4,7 @@ from io import BytesIO
 from ModelMagic.fileRW import *
 import decNLZ1
 import package_fmt_pkg
+import FileTableGetPS2
 iso = pycdlib.PyCdlib()
 iso.open(sys.argv[1])
 
@@ -21,15 +22,21 @@ iso.get_file_from_iso_fp(TekkenCodeArchive, iso_path=TekkenCodeFile)
 iso.get_file_from_iso_fp(TekkenDataArchive, iso_path=TekkenDataFile)
 #1 Get hooks to 2 files
 
-CodeArchive = FRead(TekkenCodeArchive.getvalue())
+CodeArchive = FRead(TekkenCodeArchive.getbuffer())
 
 archiveCode = package_fmt_pkg.PKG()
 archiveCode.read(CodeArchive)
 print(len(archiveCode.files))
 cmpCode = archiveCode.files[5]
 print(len(cmpCode))
-decCode = decNLZ1.unpack_sc3game(cmpCode)
-print(len(decCode))
 
-
+Code = FRead(decNLZ1.unpack_sc3game(cmpCode))
+Blob = FRead(TekkenDataArchive.getbuffer())
 iso.close()
+#DECOMPRESSED!
+testOut = FileTableGetPS2.unarchive(Code,Blob,sys.argv[1]+"_Assets\\")
+print(testOut)
+
+
+
+

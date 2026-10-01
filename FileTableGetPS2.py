@@ -1,5 +1,6 @@
 import sys,struct,os
 import tk5psp_crypt,tk5psp_dec
+from ModelMagic.fileRW import *
 
 def u32(file):
     return struct.unpack("<I", file.read(4))[0]
@@ -35,42 +36,40 @@ class LUT(object):
     def __init__(self):
         self.offset = 0
         self.size = 0
-    def read(self,f):
-        self.offset = (u32(f))*0x800
-        self.size = u32(f)
+    def read(self,f:FRead):
+        self.offset = (f.u32())*0x800
+        self.size = f.u32()
 
 f = open(sys.argv[1],'rb')
-f.seek(TABLESTART)
-lookups = []
-for x in range(TABLECOUNT):
-    cur = LUT()
-    cur.read(f)
-    lookups.append(cur)
-checksums = []
-f.seek(CHECKSTART)
-for x in range(TABLECOUNT):
-    checksums.append(u32(f))
-f.close()
-total = 0
-offsets = []
-fbin = open(sys.argv[2],'rb')
-outDir = str(sys.argv[2]+"_Extract/")
-os.makedirs(outDir, exist_ok=True)
-for indx,x in enumerate(lookups):
-    if(x.size != 0xFFFFFFFF):
-        fbin.seek(x.offset)
-        #fil = open(outDir + str("%04i" % (indx)) + ".bin",'wb')
-        dataOG = fbin.read(x.size)
-        if(compute_word_sum_fast(dataOG,x.size) == checksums[indx]):
+def unarchive(f:FRead,fbin:FRead,outDir):
+    unarchived = {}
+    f.seek(TABLESTART)
+    lookups = []
+    for x in range(TABLECOUNT):
+        cur = LUT()
+        cur.read(f)
+        lookups.append(cur)
+    checksums = []
+    f.seek(CHECKSTART)
+    for x in range(TABLECOUNT):
+        checksums.append(f.u32())
+    for indx,x in enumerate(lookups):
+        if(x.size != 0xFFFFFFFF):
+            fbin.seek(x.offset)
+            os.makedirs(outDir, exist_ok=True)
             fil = open(outDir + str("%04i" % (indx)) + ".bin",'wb')
-            fil.write(dataOG)
-            print("leMatch at %04i"%indx)
-        else:
-            buf = bytearray(dataOG)
-            tk5psp_crypt.decrypt_sector_data_fast(buf,indx,x.size)
-            if(compute_word_sum_fast(buf,x.size) == checksums[indx]):
-                fil = open(outDir + str("%04i" % (indx)) + ".bin",'wb')
-                fil.write(buf)
-                print("leDecriptMatch at %04i"%indx)
+           
+            dataOG = fbin.read(x.size)
+            if(compute_word_sum_fast(dataOG,x.size) == checksums[indx]):
+                fil.write(dataOG)
+                #unarchived[str(str("%04i" % (indx)) + ".bin")] = dataOG
+                print("leMatch at %04i"%indx)
             else:
-                print("WeFailed %04i"%indx)
+                buf = bytearray(dataOG)
+                tk5psp_crypt.decrypt_sector_data_fast(buf,indx,x.size)
+                if(compute_word_sum_fast(buf,x.size) == checksums[indx]):
+                    fil.write(buf)
+                    print("leDecriptMatch at %04i"%indx)
+                else:
+                    print("WeFailed %04i"%indx)
+    return unarchived
